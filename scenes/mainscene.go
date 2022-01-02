@@ -1,0 +1,88 @@
+package scenes
+
+import (
+	"bytes"
+	_ "embed"
+	"encoding/json"
+	"image"
+	"image/png"
+	"log"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+)
+
+const (
+	tileSize = 8
+	tileXNum = 32
+)
+
+var (
+	//go:embed resources/map001.png
+	sprite_sheet []byte
+	//go:embed resources/map001.png.json
+	map001     []byte
+	tilesImage *ebiten.Image
+	tileMap    TileMap
+)
+
+type MainScene struct {
+	count int
+}
+
+type TileMap struct {
+	Tileshigh int `json:"tileshigh"`
+	Layers    []struct {
+		Tiles []struct {
+			X     int  `json:"x"`
+			Rot   int  `json:"rot"`
+			Y     int  `json:"y"`
+			Index int  `json:"index"`
+			FlipX bool `json:"flipX"`
+			Tile  int  `json:"tile"`
+		} `json:"tiles"`
+		Name   string `json:"name"`
+		Number int    `json:"number"`
+	} `json:"layers"`
+	Tileheight int `json:"tileheight"`
+	Tileswide  int `json:"tileswide"`
+	Tilewidth  int `json:"tilewidth"`
+}
+
+func init() {
+	img, err := png.Decode(bytes.NewReader(sprite_sheet))
+	if err != nil {
+		log.Fatal(err)
+	}
+	tilesImage = ebiten.NewImageFromImage(img)
+
+	if err := json.Unmarshal(map001, &tileMap); err != nil {
+		panic(err)
+	}
+
+}
+
+func (s *MainScene) Draw(r *ebiten.Image) {
+	ebitenutil.DebugPrint(r, "Main scene")
+
+	for l := len(tileMap.Layers) - 1; l >= 0; l-- {
+		for _, t := range tileMap.Layers[l].Tiles {
+			op := &ebiten.DrawImageOptions{}
+			op.GeoM.Translate(float64(t.X)*tileSize, float64(t.Y)*tileSize)
+
+			sx := (t.Tile % tileXNum) * tileSize
+			sy := (t.Tile / tileXNum) * tileSize
+			r.DrawImage(tilesImage.SubImage(image.Rect(sx, sy, sx+tileSize, sy+tileSize)).(*ebiten.Image), op)
+		}
+	}
+}
+
+func (s *MainScene) Update(state *GameState) error {
+	return nil
+}
+
+func NewMainScene() *MainScene {
+	return &MainScene{
+		// field: &Field{},
+	}
+}
