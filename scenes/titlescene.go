@@ -7,7 +7,8 @@ import (
 )
 
 type TitleScene struct {
-	count int
+	count       int
+	childScenes []Scene
 }
 
 func (s *TitleScene) Draw(r *ebiten.Image) {
@@ -30,4 +31,9 @@ func (s *TitleScene) Update(state *GameState) error {
 	}
 
 	return nil
+}
+
+func (s *TitleScene) GetChildScenes() []Scene {
+	s.childScenes = []Scene{}
+	return s.childScenes
 }

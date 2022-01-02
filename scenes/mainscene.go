@@ -24,10 +24,17 @@ var (
 	map001     []byte
 	tilesImage *ebiten.Image
 	tileMap    TileMap
+	Obstacles  []Tile
 )
 
+type Tile struct {
+	x int
+	y int
+}
+
 type MainScene struct {
-	count int
+	count       int
+	childScenes []Scene
 }
 
 type TileMap struct {
@@ -67,6 +74,11 @@ func (s *MainScene) Draw(r *ebiten.Image) {
 
 	for l := len(tileMap.Layers) - 1; l >= 0; l-- {
 		for _, t := range tileMap.Layers[l].Tiles {
+			if tileMap.Layers[l].Name == "Obstacles" && t.Tile >= 0 {
+				Obstacles = append(Obstacles, Tile{x: t.X * tileSize, y: t.Y * tileSize})
+				continue
+			}
+
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(float64(t.X)*tileSize, float64(t.Y)*tileSize)
 
@@ -82,7 +94,16 @@ func (s *MainScene) Update(state *GameState) error {
 }
 
 func NewMainScene() *MainScene {
-	return &MainScene{
+	p := NewPlayerScene()
+	m := &MainScene{
+		childScenes: []Scene{},
 		// field: &Field{},
 	}
+	m.childScenes = append(m.childScenes, p)
+
+	return m
+}
+
+func (s *MainScene) GetChildScenes() []Scene {
+	return s.childScenes
 }

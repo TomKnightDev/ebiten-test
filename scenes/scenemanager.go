@@ -12,6 +12,8 @@ var (
 type Scene interface {
 	Update(state *GameState) error
 	Draw(screen *ebiten.Image)
+	GetChildScenes() []Scene
+	// AddChildScene(s *Scene)
 }
 
 const transitionMaxCount = 20
@@ -29,10 +31,20 @@ type SceneManager struct {
 
 func (s *SceneManager) Update() error {
 	if s.transitionCount == 0 {
-		return s.current.Update(&GameState{
+		mainErr := s.current.Update(&GameState{
 			SceneManager: s,
 			// Input:        input,
 		})
+
+		for _, scene := range s.current.GetChildScenes() {
+			if err := scene.Update(&GameState{
+				SceneManager: s,
+			}); err != nil {
+				return err
+			}
+		}
+
+		return mainErr
 	}
 
 	s.transitionCount--
@@ -49,6 +61,9 @@ func (s *SceneManager) Draw(r *ebiten.Image) {
 
 	if s.transitionCount == 0 {
 		s.current.Draw(r)
+		for _, scene := range s.current.GetChildScenes() {
+			scene.Draw(r)
+		}
 		return
 	}
 
