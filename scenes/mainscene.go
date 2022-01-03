@@ -9,7 +9,6 @@ import (
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 const (
@@ -70,8 +69,6 @@ func init() {
 }
 
 func (s *MainScene) Draw(r *ebiten.Image) {
-	ebitenutil.DebugPrint(r, "Main scene")
-
 	for l := len(tileMap.Layers) - 1; l >= 0; l-- {
 		for _, t := range tileMap.Layers[l].Tiles {
 			if tileMap.Layers[l].Name == "Obstacles" && t.Tile >= 0 {
@@ -90,16 +87,25 @@ func (s *MainScene) Draw(r *ebiten.Image) {
 }
 
 func (s *MainScene) Update(state *GameState) error {
+	for _, scene := range s.childScenes {
+		if err := scene.Update(&GameState{
+			SceneManager: state.SceneManager,
+		}); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 func NewMainScene() *MainScene {
 	p := NewPlayerScene()
+	e := NewEnemyScene()
 	m := &MainScene{
 		childScenes: []Scene{},
-		// field: &Field{},
 	}
-	m.childScenes = append(m.childScenes, p)
+
+	m.childScenes = append(m.childScenes, e, p)
 
 	return m
 }

@@ -5,8 +5,8 @@ import (
 )
 
 var (
-	transitionFrom = ebiten.NewImage(1920, 1080)
-	transitionTo   = ebiten.NewImage(1920, 1080)
+	transitionFrom = ebiten.NewImage(384, 384)
+	transitionTo   = ebiten.NewImage(384, 384)
 )
 
 type Scene interface {
@@ -35,14 +35,6 @@ func (s *SceneManager) Update() error {
 			SceneManager: s,
 			// Input:        input,
 		})
-
-		for _, scene := range s.current.GetChildScenes() {
-			if err := scene.Update(&GameState{
-				SceneManager: s,
-			}); err != nil {
-				return err
-			}
-		}
 
 		return mainErr
 	}
