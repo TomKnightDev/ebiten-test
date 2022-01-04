@@ -7,28 +7,31 @@ type SpriteLocation struct {
 }
 
 type Character struct {
-	sprites         map[string]SpriteLocation
-	xPos            int
-	yPos            int
-	direction       string
-	turnTimer       int
-	currentTurnTime int
+	sprites               map[string]SpriteLocation
+	xPos                  int
+	yPos                  int
+	direction             string
+	moveTurnTimer         int
+	currentMoveTurnTime   int
+	actionTurnTimer       int
+	currentActionTurnTime int
 }
 
-func NewCharacter(xPos int, yPos int, dir string, turnTime int) *Character {
+func NewCharacter(xPos int, yPos int, dir string, turnTime int, actionTime int) *Character {
 	c := new(Character)
 	c.xPos = xPos
 	c.yPos = yPos
 	c.direction = dir
 	c.sprites = make(map[string]SpriteLocation)
-	c.turnTimer = turnTime
+	c.moveTurnTimer = turnTime
+	c.actionTurnTimer = actionTime
 
 	return c
 }
 
-func (c *Character) MapSprites(dir string, spriteIndex int) {
+func (c *Character) MapSprites(dir string, spriteIndex int, rowCount int) {
 	c.sprites[dir] = SpriteLocation{
-		x: (spriteIndex % 8) * tileSize,
-		y: (spriteIndex / 8) * tileSize,
+		x: (spriteIndex % rowCount) * tileSize,
+		y: (spriteIndex / rowCount) * tileSize,
 	}
 }

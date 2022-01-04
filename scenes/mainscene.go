@@ -87,20 +87,12 @@ func (s *MainScene) Draw(r *ebiten.Image) {
 }
 
 func (s *MainScene) Update(state *GameState) error {
-	for _, scene := range s.childScenes {
-		if err := scene.Update(&GameState{
-			SceneManager: state.SceneManager,
-		}); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
 func NewMainScene() *MainScene {
 	p := NewPlayerScene()
-	e := NewEnemyScene()
+	e := NewEnemyScene(&p.player)
 	m := &MainScene{
 		childScenes: []Scene{},
 	}

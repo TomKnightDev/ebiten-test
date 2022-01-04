@@ -36,6 +36,8 @@ func (s *SceneManager) Update() error {
 			// Input:        input,
 		})
 
+		UpdateChildren(s, s.current.GetChildScenes())
+
 		return mainErr
 	}
 
@@ -49,13 +51,25 @@ func (s *SceneManager) Update() error {
 	return nil
 }
 
+func UpdateChildren(sceneManager *SceneManager, childScenes []Scene) error {
+	for _, scene := range childScenes {
+		if err := scene.Update(&GameState{
+			SceneManager: sceneManager,
+		}); err != nil {
+			return err
+		}
+
+		UpdateChildren(sceneManager, scene.GetChildScenes())
+	}
+
+	return nil
+}
+
 func (s *SceneManager) Draw(r *ebiten.Image) {
 
 	if s.transitionCount == 0 {
 		s.current.Draw(r)
-		for _, scene := range s.current.GetChildScenes() {
-			scene.Draw(r)
-		}
+		DrawChildren(r, s.current.GetChildScenes())
 		return
 	}
 
@@ -71,6 +85,13 @@ func (s *SceneManager) Draw(r *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.ColorM.Scale(1, 1, 1, alpha)
 	r.DrawImage(transitionTo, op)
+}
+
+func DrawChildren(r *ebiten.Image, children []Scene) {
+	for _, scene := range children {
+		scene.Draw(r)
+		DrawChildren(r, scene.GetChildScenes())
+	}
 }
 
 func (s *SceneManager) GoTo(scene Scene) {

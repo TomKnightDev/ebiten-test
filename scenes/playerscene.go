@@ -15,12 +15,12 @@ var (
 	//go:embed resources/player.png
 	playerPng    []byte
 	playerSprite *ebiten.Image
-	player       Character
 )
 
 type PlayerScene struct {
 	count       int
 	childScenes []Scene
+	player      Character
 }
 
 func init() {
@@ -32,33 +32,54 @@ func init() {
 
 	playerSprite = ebiten.NewImageFromImage(img)
 
-	player = *NewCharacter(18*tileSize, 15*tileSize, "down", 20)
-	player.MapSprites("up", 9)
-	player.MapSprites("down", 3)
-	player.MapSprites("right", 0)
-	player.MapSprites("left", 6)
 }
 
 func (s *PlayerScene) Draw(r *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(player.xPos), float64(player.yPos))
+	op.GeoM.Translate(float64(s.player.xPos), float64(s.player.yPos))
 
-	x := player.sprites[player.direction].x
-	y := player.sprites[player.direction].y
+	x := s.player.sprites[s.player.direction].x
+	y := s.player.sprites[s.player.direction].y
 
 	r.DrawImage(playerSprite.SubImage(image.Rect(x, y, x+tileSize, y+tileSize)).(*ebiten.Image), op)
 }
 
 func (s *PlayerScene) Update(state *GameState) error {
-	player.currentTurnTime++
 
-	if player.currentTurnTime < player.turnTimer {
-		return nil
+	ActionUpdate(s)
+	MoveUpdate(s)
+
+	return nil
+}
+
+func ActionUpdate(s *PlayerScene) {
+	s.player.currentActionTurnTime++
+
+	if s.player.currentActionTurnTime < s.player.actionTurnTimer {
+		return
 	}
 
-	nextXPos := player.xPos
-	nextYPos := player.yPos
-	nextDirection := player.direction
+	// Fire
+	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		s.childScenes = append(s.childScenes, NewBulletScene(
+			Tile{
+				x: s.player.xPos,
+				y: s.player.yPos},
+			s.player.direction))
+		s.player.currentActionTurnTime = 0
+	}
+}
+
+func MoveUpdate(s *PlayerScene) {
+	s.player.currentMoveTurnTime++
+
+	if s.player.currentMoveTurnTime < s.player.moveTurnTimer {
+		return
+	}
+
+	nextXPos := s.player.xPos
+	nextYPos := s.player.yPos
+	nextDirection := s.player.direction
 
 	for _, pk := range inpututil.AppendPressedKeys(nil) {
 		if pk == ebiten.KeyW {
@@ -79,19 +100,29 @@ func (s *PlayerScene) Update(state *GameState) error {
 		}
 	}
 
-	if (nextXPos != player.xPos || nextYPos != player.yPos) && CanTraverse(Tile{x: nextXPos, y: nextYPos}) {
-		player.xPos = nextXPos
-		player.yPos = nextYPos
-		player.direction = nextDirection
-
-		player.currentTurnTime = 0
+	if nextDirection != s.player.direction {
+		s.player.direction = nextDirection
+		s.player.currentMoveTurnTime = 0
+		return
 	}
 
-	return nil
+	if (nextXPos != s.player.xPos || nextYPos != s.player.yPos) && CanTraverse(Tile{x: nextXPos, y: nextYPos}) {
+		s.player.xPos = nextXPos
+		s.player.yPos = nextYPos
+		s.player.currentMoveTurnTime = 0
+	}
 }
 
 func NewPlayerScene() *PlayerScene {
-	return &PlayerScene{}
+	p := &PlayerScene{
+		player: *NewCharacter(18*tileSize, 15*tileSize, "down", 20, 10),
+	}
+
+	p.player.MapSprites("up", 9, 8)
+	p.player.MapSprites("down", 3, 8)
+	p.player.MapSprites("right", 0, 8)
+	p.player.MapSprites("left", 6, 8)
+	return p
 }
 
 func (s *PlayerScene) GetChildScenes() []Scene {
