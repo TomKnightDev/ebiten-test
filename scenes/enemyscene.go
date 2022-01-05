@@ -19,8 +19,8 @@ var (
 type EnemyScene struct {
 	count       int
 	childScenes []Scene
-	enemy1      Character
-	target      *Character
+	enemy       Entity
+	target      *Entity
 }
 
 func init() {
@@ -35,61 +35,64 @@ func init() {
 
 func (s *EnemyScene) Draw(r *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(s.enemy1.xPos), float64(s.enemy1.yPos))
+	op.GeoM.Translate(float64(s.enemy.xPos), float64(s.enemy.yPos))
 
-	x := s.enemy1.sprites[s.enemy1.direction].x
-	y := s.enemy1.sprites[s.enemy1.direction].y
+	x := s.enemy.sprites[s.enemy.direction].x
+	y := s.enemy.sprites[s.enemy.direction].y
 
 	r.DrawImage(enemy1Sprite.SubImage(image.Rect(x, y, x+tileSize, y+tileSize)).(*ebiten.Image), op)
 }
 
-func (s *EnemyScene) Update(state *GameState) error {
-	s.enemy1.currentMoveTurnTime++
+func (s *EnemyScene) Update(state *GameState) (bool, error) {
+	s.enemy.currentMoveTurnTime++
 
-	if s.enemy1.currentMoveTurnTime < s.enemy1.moveTurnTimer {
-		return nil
+	if s.enemy.currentMoveTurnTime < s.enemy.moveTurnTimer {
+		return false, nil
 	}
 
-	nextXPos := s.enemy1.xPos
-	nextYPos := s.enemy1.yPos
-	nextDirection := s.enemy1.direction
+	nextXPos := s.enemy.xPos
+	nextYPos := s.enemy.yPos
+	nextDirection := s.enemy.direction
 
 	// Move towards player
-	if s.enemy1.xPos < s.target.xPos {
+	if s.enemy.xPos < s.target.xPos {
 		nextXPos += tileSize
 		nextDirection = "right"
-	} else if s.enemy1.xPos > s.target.xPos {
+	} else if s.enemy.xPos > s.target.xPos {
 		nextXPos -= tileSize
 		nextDirection = "left"
-	} else if s.enemy1.yPos < s.target.yPos {
+	} else if s.enemy.yPos < s.target.yPos {
 		nextYPos += tileSize
 		nextDirection = "down"
-	} else if s.enemy1.yPos > s.target.yPos {
+	} else if s.enemy.yPos > s.target.yPos {
 		nextYPos -= tileSize
 		nextDirection = "up"
 	}
 
 	if (nextXPos != s.target.xPos || nextYPos != s.target.yPos) && CanTraverse(Tile{x: nextXPos, y: nextYPos}) {
-		s.enemy1.xPos = nextXPos
-		s.enemy1.yPos = nextYPos
-		s.enemy1.direction = nextDirection
+		s.enemy.xPos = nextXPos
+		s.enemy.yPos = nextYPos
+		s.enemy.entityObj.X = float64(nextXPos)
+		s.enemy.entityObj.Y = float64(nextYPos)
+		s.enemy.entityObj.Update()
+		s.enemy.direction = nextDirection
 	}
 
-	s.enemy1.currentMoveTurnTime = 0
+	s.enemy.currentMoveTurnTime = 0
 
-	return nil
+	return false, nil
 }
 
-func NewEnemyScene(target *Character) *EnemyScene {
+func NewEnemyScene(s *SceneManager, target *Entity) *EnemyScene {
 	e := &EnemyScene{
-		enemy1: *NewCharacter(22*tileSize, 18*tileSize, "down", 40, 20),
+		enemy:  *NewEntity(s, 22*tileSize, 18*tileSize, "down", 40, 20, "enemy"),
 		target: target,
 	}
 
-	e.enemy1.MapSprites("up", 9, 8)
-	e.enemy1.MapSprites("down", 3, 8)
-	e.enemy1.MapSprites("right", 0, 8)
-	e.enemy1.MapSprites("left", 6, 8)
+	e.enemy.MapSprites("up", 9, 8)
+	e.enemy.MapSprites("down", 3, 8)
+	e.enemy.MapSprites("right", 0, 8)
+	e.enemy.MapSprites("left", 6, 8)
 	return e
 }
 

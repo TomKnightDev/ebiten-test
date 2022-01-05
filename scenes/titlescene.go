@@ -23,14 +23,14 @@ func (s *TitleScene) Draw(r *ebiten.Image) {
 	// drawTextWithShadowCenter(r, message, x, y, 1, color.NRGBA{0x80, 0, 0, 0xff}, ScreenWidth)
 }
 
-func (s *TitleScene) Update(state *GameState) error {
+func (s *TitleScene) Update(state *GameState) (bool, error) {
 	s.count++
 	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
-		state.SceneManager.GoTo(NewMainScene())
-		return nil
+		state.SceneManager.GoTo(NewMainScene(state.SceneManager))
+		return false, nil
 	}
 
-	return nil
+	return false, nil
 }
 
 func (s *TitleScene) GetChildScenes() []Scene {

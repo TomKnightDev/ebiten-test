@@ -86,13 +86,13 @@ func (s *MainScene) Draw(r *ebiten.Image) {
 	}
 }
 
-func (s *MainScene) Update(state *GameState) error {
-	return nil
+func (s *MainScene) Update(state *GameState) (bool, error) {
+	return false, nil
 }
 
-func NewMainScene() *MainScene {
-	p := NewPlayerScene()
-	e := NewEnemyScene(&p.player)
+func NewMainScene(s *SceneManager) *MainScene {
+	p := NewPlayerScene(s)
+	e := NewEnemyScene(s, &p.player)
 	m := &MainScene{
 		childScenes: []Scene{},
 	}
@@ -104,4 +104,8 @@ func NewMainScene() *MainScene {
 
 func (s *MainScene) GetChildScenes() []Scene {
 	return s.childScenes
+}
+
+func (s *MainScene) RemoveChildScene(childScene int) {
+	RemoveScene(s.childScenes, childScene)
 }

@@ -3,6 +3,7 @@ package scenes
 import (
 	"bytes"
 	_ "embed"
+	"fmt"
 	"image"
 	"image/png"
 	"log"
@@ -20,7 +21,7 @@ var (
 type PlayerScene struct {
 	count       int
 	childScenes []Scene
-	player      Character
+	player      Entity
 }
 
 func init() {
@@ -44,15 +45,14 @@ func (s *PlayerScene) Draw(r *ebiten.Image) {
 	r.DrawImage(playerSprite.SubImage(image.Rect(x, y, x+tileSize, y+tileSize)).(*ebiten.Image), op)
 }
 
-func (s *PlayerScene) Update(state *GameState) error {
-
-	ActionUpdate(s)
+func (s *PlayerScene) Update(state *GameState) (bool, error) {
+	actionUpdate(state.SceneManager, s)
 	MoveUpdate(s)
 
-	return nil
+	return false, nil
 }
 
-func ActionUpdate(s *PlayerScene) {
+func actionUpdate(sm *SceneManager, s *PlayerScene) {
 	s.player.currentActionTurnTime++
 
 	if s.player.currentActionTurnTime < s.player.actionTurnTimer {
@@ -61,11 +61,12 @@ func ActionUpdate(s *PlayerScene) {
 
 	// Fire
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		s.childScenes = append(s.childScenes, NewBulletScene(
+		s.childScenes = append(s.childScenes, NewBulletScene(sm,
 			Tile{
 				x: s.player.xPos,
 				y: s.player.yPos},
-			s.player.direction))
+			s.player.direction,
+			"player"))
 		s.player.currentActionTurnTime = 0
 	}
 }
@@ -107,15 +108,31 @@ func MoveUpdate(s *PlayerScene) {
 	}
 
 	if (nextXPos != s.player.xPos || nextYPos != s.player.yPos) && CanTraverse(Tile{x: nextXPos, y: nextYPos}) {
+
+		PlayerWillCollide(s, nextXPos-s.player.xPos, nextYPos-s.player.yPos)
 		s.player.xPos = nextXPos
 		s.player.yPos = nextYPos
+		s.player.entityObj.X = float64(nextXPos)
+		s.player.entityObj.Y = float64(nextYPos)
+		s.player.entityObj.Update()
 		s.player.currentMoveTurnTime = 0
 	}
 }
 
-func NewPlayerScene() *PlayerScene {
+func PlayerWillCollide(s *PlayerScene, x, y int) bool {
+	eo := s.player.entityObj
+
+	if collision := eo.Check(float64(x), float64(y)); collision != nil {
+		fmt.Println("Player hit")
+		return true
+	}
+
+	return false
+}
+
+func NewPlayerScene(s *SceneManager) *PlayerScene {
 	p := &PlayerScene{
-		player: *NewCharacter(18*tileSize, 15*tileSize, "down", 20, 10),
+		player: *NewEntity(s, 18*tileSize, 15*tileSize, "down", 20, 10, "player"),
 	}
 
 	p.player.MapSprites("up", 9, 8)

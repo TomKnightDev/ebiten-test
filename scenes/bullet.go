@@ -19,7 +19,7 @@ var (
 type BulletScene struct {
 	count       int
 	childScenes []Scene
-	bullet      Character
+	bullet      Entity
 }
 
 func init() {
@@ -42,31 +42,45 @@ func (s *BulletScene) Draw(r *ebiten.Image) {
 	r.DrawImage(bulletSprite.SubImage(image.Rect(x, y, x+tileSize, y+tileSize)).(*ebiten.Image), op)
 }
 
-func (s *BulletScene) Update(state *GameState) error {
+func (s *BulletScene) Update(state *GameState) (bool, error) {
 	s.bullet.currentMoveTurnTime++
 
 	if s.bullet.currentMoveTurnTime < s.bullet.moveTurnTimer {
-		return nil
+		return false, nil
 	}
 
 	s.bullet.currentMoveTurnTime = 0
 
+	x := 0
+	y := 0
+
 	if s.bullet.direction == "down" {
-		s.bullet.yPos++
+		y++
 	} else if s.bullet.direction == "up" {
-		s.bullet.yPos--
+		y--
 	} else if s.bullet.direction == "right" {
-		s.bullet.xPos++
+		x++
 	} else if s.bullet.direction == "left" {
-		s.bullet.xPos--
+		x--
 	}
 
-	return nil
+	eo := s.bullet.entityObj
+	if collision := eo.Check(float64(x), float64(y), "enemy"); collision != nil {
+		return true, nil
+	}
+
+	s.bullet.xPos += x
+	s.bullet.yPos += y
+	s.bullet.entityObj.X = float64(s.bullet.xPos)
+	s.bullet.entityObj.Y = float64(s.bullet.yPos)
+	s.bullet.entityObj.Update()
+
+	return false, nil
 }
 
-func NewBulletScene(start Tile, dir string) *BulletScene {
+func NewBulletScene(s *SceneManager, start Tile, dir string, ignoreTag string) *BulletScene {
 	b := &BulletScene{
-		bullet: *NewCharacter(start.x, start.y, dir, 0, 0),
+		bullet: *NewEntity(s, start.x, start.y, dir, 0, 0, "bullet"),
 	}
 	// bullet := Character{}
 	// bullet.xPos = start.x
@@ -84,9 +98,3 @@ func NewBulletScene(start Tile, dir string) *BulletScene {
 func (s *BulletScene) GetChildScenes() []Scene {
 	return s.childScenes
 }
-
-// func (s *BulletScene) SetBulletVals(x int, y int, dir string) {
-// 	s.bullet.xPos = x
-// 	s.bullet.yPos = y
-// 	s.bullet.direction = dir
-// }

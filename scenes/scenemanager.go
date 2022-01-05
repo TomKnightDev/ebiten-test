@@ -2,6 +2,7 @@ package scenes
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/solarlune/resolv"
 )
 
 var (
@@ -10,10 +11,9 @@ var (
 )
 
 type Scene interface {
-	Update(state *GameState) error
+	Update(state *GameState) (bool, error)
 	Draw(screen *ebiten.Image)
 	GetChildScenes() []Scene
-	// AddChildScene(s *Scene)
 }
 
 const transitionMaxCount = 20
@@ -27,42 +27,56 @@ type SceneManager struct {
 	current         Scene
 	next            Scene
 	transitionCount int
+	Space           *resolv.Space
 }
 
-func (s *SceneManager) Update() error {
+func (s *SceneManager) Update() (bool, error) {
 	if s.transitionCount == 0 {
-		mainErr := s.current.Update(&GameState{
+		_, mainErr := s.current.Update(&GameState{
 			SceneManager: s,
 			// Input:        input,
 		})
 
-		UpdateChildren(s, s.current.GetChildScenes())
+		UpdateChildren(s, s.current)
 
-		return mainErr
+		return false, mainErr
 	}
 
 	s.transitionCount--
 	if s.transitionCount > 0 {
-		return nil
+		return false, nil
 	}
 
 	s.current = s.next
 	s.next = nil
-	return nil
+	return false, nil
 }
 
-func UpdateChildren(sceneManager *SceneManager, childScenes []Scene) error {
-	for _, scene := range childScenes {
-		if err := scene.Update(&GameState{
+func UpdateChildren(sceneManager *SceneManager, currentScene Scene) error {
+	cs := currentScene.GetChildScenes()
+	for i, scene := range cs {
+		dispose, err := scene.Update(&GameState{
 			SceneManager: sceneManager,
-		}); err != nil {
+		})
+		if dispose {
+			cs = RemoveScene(cs, i)
+			continue
+		}
+		if err != nil {
 			return err
 		}
 
-		UpdateChildren(sceneManager, scene.GetChildScenes())
+		UpdateChildren(sceneManager, scene)
 	}
 
 	return nil
+}
+
+func RemoveScene(s []Scene, i int) []Scene {
+	s[i] = s[len(s)-1]
+	return s[:len(s)-1]
+
+	// return append(scenes[:s], scenes[s+1:]...)
 }
 
 func (s *SceneManager) Draw(r *ebiten.Image) {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/solarlune/resolv"
 	"github.com/tomknightdev/ebiten-test/scenes"
 )
 
@@ -21,12 +22,14 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeigh
 
 func (g *Game) Update() error {
 	if g.sceneManager == nil {
-		g.sceneManager = &scenes.SceneManager{}
+		g.sceneManager = &scenes.SceneManager{
+			Space: resolv.NewSpace(384, 384, 8, 8),
+		}
 		g.sceneManager.GoTo(&scenes.TitleScene{})
 	}
 
 	// g.input.Update()
-	if err := g.sceneManager.Update(); err != nil {
+	if _, err := g.sceneManager.Update(); err != nil {
 		return err
 	}
 	return nil
